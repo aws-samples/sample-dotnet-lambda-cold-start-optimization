@@ -1,0 +1,15 @@
+version = 0.1
+
+# Committed on purpose. stack_name here is the single source of truth — the
+# deploy, cleanup and bench scripts all read it, so a bare `sam deploy` from
+# this directory and `./Deploy-OrdersApi.ps1` target the same stack.
+[default.deploy.parameters]
+stack_name = "svs344-03-native-aot-single-purpose"
+resolve_s3 = true
+s3_prefix = "svs344-03-native-aot-single-purpose"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"

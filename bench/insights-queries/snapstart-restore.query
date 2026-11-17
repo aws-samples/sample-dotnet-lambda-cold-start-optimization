@@ -1,0 +1,9 @@
+filter @type = "REPORT"
+| parse @message /Restore Duration: (?<restoreMs>[0-9.]+) ms/
+| stats
+    count(*) as invocations,
+    pct(restoreMs, 50) as restore_p50,
+    pct(restoreMs, 99) as restore_p99,
+    avg(@duration) as warm_avg_ms,
+    max(@maxMemoryUsed / 1000 / 1000) as max_mem_mb
+  by @log

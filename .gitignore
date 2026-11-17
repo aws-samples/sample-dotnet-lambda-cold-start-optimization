@@ -1,0 +1,68 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+build/
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+
+# .NET
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Visual Studio
+.vs/
+*.rsuser
+[Tt]est[Rr]esult*/
+
+# macOS
+.DS_Store
+._*
+
+# SAM
+.aws-sam/
+
+# Benchmark results (generated per-run)
+bench/results/*.csv
+bench/results/*.html
+
+# Agent workflow scratch (plans, reviews, verification notes)
+.agents/
+
+# Threat Modeling MCP server scratch exports (deliverables live in threat-model/)
+.threatmodel/
+threat-model

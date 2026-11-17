@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/00-shared/">
+    <Project Path="00-shared/src/OrdersLib/OrdersLib.csproj" />
+  </Folder>
+  <Folder Name="/01-managed/">
+    <Project Path="01-managed/src/OrdersApi/OrdersApi.csproj" />
+  </Folder>
+  <Folder Name="/02-snapstart/">
+    <Project Path="02-snapstart/src/OrdersApi/OrdersApi.csproj" />
+  </Folder>
+  <Folder Name="/03-native-aot/">
+    <Project Path="03-native-aot/src/OrdersApi/OrdersApi.csproj" />
+  </Folder>
+  <Folder Name="/reference/" />
+  <Folder Name="/reference/02-snapstart-primed/">
+    <Project Path="reference/02-snapstart-primed/src/OrdersApi/OrdersApi.csproj" />
+  </Folder>
+  <Folder Name="/reference/03-native-aot-ready/">
+    <Project Path="reference/03-native-aot-ready/src/OrdersApi/OrdersApi.csproj" />
+  </Folder>
+  <Folder Name="/reference/03-native-aot-single-purpose/">
+    <Project Path="reference/03-native-aot-single-purpose/src/OrdersApi/OrdersApi.csproj" />
+  </Folder>
+</Solution>

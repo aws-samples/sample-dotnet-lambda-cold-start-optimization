@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Copyright © 2026 Amazon.com and Affiliates. Licensed under MIT-0. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\00-shared\src\OrdersLib\OrdersLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="2.*" />
+    <PackageReference Include="AWS.Lambda.Powertools.Logging" Version="3.*" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.*" />
+  </ItemGroup>
+
+</Project>

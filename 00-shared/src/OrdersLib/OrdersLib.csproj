@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Copyright © 2026 Amazon.com and Affiliates. Licensed under MIT-0. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>OrdersApi</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Lives in 00-shared/ so it sorts ahead of the variants that reference it —
+    the directory listing is the reading order. Layout mirrors a variant:
+    <dir>/src/<ProjectName>/.
+
+    This holds ALL the application code. A variant directory contains only its
+    template, its samconfig and its Program.cs, which is what makes "same code,
+    different stacks" literally rather than approximately true.
+
+    NO trim or AOT properties here on purpose. The AOT variants publish with
+    TrimMode full, so this assembly is trimmed member-by-member along with
+    theirs — that is what makes Failure #1 reproduce on the DTOs, and Failure #3
+    reproduce on OrderRepository.cs.
+
+    Two IOrderRepository implementations for DynamoDB is deliberate:
+    OrderRepository (unannotated, used by every variant but one) and
+    OrderRepositoryAot (annotated, used only by reference/03-native-aot-ready).
+    See demo-seams.md before touching either.
+  -->
+
+  <ItemGroup>
+    <!-- The only package reference. It exists for Failure #3: the SDK is the
+         realistic source of IL2xxx trimming warnings. -->
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.*" />
+  </ItemGroup>
+
+</Project>

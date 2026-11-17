@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Copyright © 2026 Amazon.com and Affiliates. Licensed under MIT-0. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+    <PublishAot>true</PublishAot>
+    <StripSymbols>true</StripSymbols>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      Microsoft.NET.Sdk, not .Web: no ASP.NET Core host and no Powertools.
+      No NoWarn and no TrimmerSingleWarn yet. Add a suppression only once a
+      publish actually emits the warning, as 03-native-aot-ready's did.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\00-shared\src\OrdersLib\OrdersLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="3.*" />
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.*" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.*" />
+    <!-- Floats within 10.x on purpose, to track .NET 10 servicing releases
+         alongside the net10.0 target. Pin an exact version, or restore with
+         a lock file, before reusing this project. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.*" />
+  </ItemGroup>
+
+</Project>

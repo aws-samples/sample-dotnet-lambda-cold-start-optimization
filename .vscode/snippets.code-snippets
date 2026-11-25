@@ -1,0 +1,149 @@
+{
+	// VS Code snippets for making the SVS344 changes yourself: SnapStart and
+	// priming in 02-snapstart/, Native AOT in 03-native-aot/. Type a prefix in a
+	// template.yaml, .csproj or .cs file and pick the snippet. The finished code
+	// is in reference/.
+	"SnapStartEnableInSam": {
+		"prefix": "SnapStartEnableInSam",
+		"body": [
+			"AutoPublishAlias: live",
+			"SnapStart:",
+			"  ApplyOn: PublishedVersions"
+		],
+		"include": [
+			"**/template.yaml"
+		],
+		"description": "Enables SnapStart (AutoPublishAlias is required, or SnapStart is a no-op)"
+	},
+	"SnapStartWarmupRequests": {
+		"prefix": "SnapStartWarmupRequests",
+		"body": [
+			"// Add warm-up requests before snapshot (called 5 times)",
+			"builder.Services.AddAWSLambdaBeforeSnapshotRequest(new HttpRequestMessage(HttpMethod.Get, \"/health\"));",
+			"builder.Services.AddAWSLambdaBeforeSnapshotRequest(new HttpRequestMessage(HttpMethod.Post, \"/orders\")",
+			"{",
+			"    Content = JsonContent.Create(new OrderRequest(\"snapstart-warmup\", \"snapstart-warmup\", 1))",
+			"});"
+		],
+		"include": [
+			"**/*.cs"
+		],
+		"description": "Primes the ASP.NET pipeline and the order path with warm-up requests before the SnapStart snapshot"
+	},
+	"SnapStartBeforeSnapshotHook": {
+		"prefix": "SnapStartBeforeSnapshotHook",
+		"body": [
+			"// SnapStart hook: runs before the snapshot is created.",
+			"Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>",
+			"{",
+			"    using var scope = app.Services.CreateScope();",
+			"    var orderService = scope.ServiceProvider.GetRequiredService<IOrderService>();",
+			"    var warmupRequest = new OrderRequest(\"snapstart-warmup\", \"snapstart-warmup\", 1);",
+			"    var warmupJson = JsonSerializer.SerializeToUtf8Bytes(warmupRequest, jsonOptions);",
+			"    for (var i = 1; i <= 5; i++)",
+			"    {",
+			"        using var stream = new MemoryStream(warmupJson);",
+			"        var request = (await JsonSerializer.DeserializeAsync<OrderRequest>(stream, jsonOptions))!;",
+			"        var response = await orderService.CreateOrderAsync(request);",
+			"        Logger.LogInformation(\"Priming pass {pass}: {orderId}\", i, response.OrderId);",
+			"        _ = JsonSerializer.Serialize(response, jsonOptions);",
+			"    }",
+			"});"
+		],
+		"include": [
+			"**/*.cs"
+		],
+		"description": "Primes the serializer and the order service directly in a RegisterBeforeSnapshot hook"
+	},
+	"SnapStartAfterRestoreHook": {
+		"prefix": "SnapStartAfterRestoreHook",
+		"body": [
+			"// SnapStart hook: runs after each restore from the snapshot.",
+			"Amazon.Lambda.Core.SnapshotRestore.RegisterAfterRestore(() =>",
+			"{",
+			"    // Re-establish what the snapshot froze: re-seed randomness,",
+			"    // reconnect, refresh any timestamp cached at init.",
+			"    Logger.LogInformation(\"Restored from snapshot\");",
+			"    return ValueTask.CompletedTask;",
+			"});"
+		],
+		"include": [
+			"**/*.cs"
+		],
+		"description": "Re-establishes frozen state in a RegisterAfterRestore hook"
+	},
+	"AotEnable": {
+		"prefix": "AotEnable",
+		"body": [
+			"<PublishAot>true</PublishAot>"
+		],
+		"include": [
+			"**/*.csproj"
+		],
+		"description": "Enables Native AOT compilation"
+	},
+	"AotSerialization": {
+		"prefix": "AotSerialization",
+		"body": [
+			"    new SourceGeneratorLambdaJsonSerializer<AppJsonContext>()"
+		],
+		"include": [
+			"**/*.cs"
+		],
+		"description": "Source-generated Lambda serializer, the second argument to AddAWSLambdaHosting"
+	},
+	"AotHttpJsonOptions": {
+		"prefix": "AotHttpJsonOptions",
+		"body": [
+			"// Use the source-generated context for results the framework serializes, such as Results.BadRequest",
+			"builder.Services.ConfigureHttpJsonOptions(options =>",
+			"    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonContext.Default));"
+		],
+		"include": [
+			"**/Program.cs"
+		],
+		"description": "Registers AppJsonContext with the minimal API's JSON options, so Results.BadRequest and other framework-serialized results work under Native AOT"
+	},
+	"AotImports": {
+		"prefix": "AotImports",
+		"body": [
+			"using System.Text.Json;",
+			"using Amazon.DynamoDBv2;",
+			"using Amazon.Lambda.Serialization.SystemTextJson;",
+			"using AWS.Lambda.Powertools.Logging;",
+			"using OrdersApi;",
+			"using OrdersApi.Models;",
+			"using OrdersApi.Services;"
+		],
+		"include": [
+			"**/Program.cs"
+		],
+		"description": "Usings for the Native AOT version of Program.cs"
+	},
+	"AotAppJsonContext": {
+		"prefix": "AotAppJsonContext",
+		"body": [
+			"",
+			"using System.Text.Json.Serialization;",
+			"using Amazon.Lambda.APIGatewayEvents;",
+			"using OrdersApi.Models;",
+			"",
+			"namespace OrdersApi;",
+			"",
+			"[JsonSerializable(typeof(OrderRequest))]",
+			"[JsonSerializable(typeof(OrderResponse))]",
+			"[JsonSerializable(typeof(APIGatewayProxyRequest))]",
+			"[JsonSerializable(typeof(APIGatewayProxyResponse))]",
+			"[JsonSourceGenerationOptions(",
+			"    PropertyNameCaseInsensitive = true,",
+			"    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]",
+			"public partial class AppJsonContext : JsonSerializerContext",
+			"{",
+			"}"
+		],
+		"include": [
+			"**/*.cs"
+		],
+		"description": "Source-generated JSON context for the request, response and API Gateway event types"
+	}
+}

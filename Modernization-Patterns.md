@@ -487,27 +487,24 @@ whole solution, not only `Program.cs`:
 grep -rn "JsonSerializer\.\(Serialize\|Deserialize\)" --include=*.cs .
 ```
 
-Minimal API endpoints also serialize for you: bound body parameters, and
-anything a handler returns. Register your context so those go through it too
+Minimal API endpoints also serialize for you: bound body parameters, anything
+a handler returns, and results such as `Results.BadRequest(message)`. Those go
+through the minimal API's JSON options, not through your explicit calls. Without
+a registered context they fail at runtime with a `NotSupportedException`, and the
+publish shows no warning for it. This repo registers the context, so its error
+results stay `Results.BadRequest`, as in the managed code
 ([Minimal APIs and JSON payloads](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/native-aot)):
 
 ```csharp
+// Use the source-generated context for results the framework serializes, such as Results.BadRequest
 builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.TypeInfoResolverChain.Insert(
-        0, AppJsonContext.Default));
+    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonContext.Default));
 ```
 
-Or do what this repo does: read the body yourself, and pass a `JsonTypeInfo`
-for everything you return, error results included:
-
-```csharp
-return Results.Content(json, "application/json; charset=utf-8", statusCode: 200);
-return Results.Json(ex.Message, AppJsonContext.Default.String, statusCode: 400);
-```
-
-A result such as `Results.BadRequest(message)` serializes through the minimal
-API's JSON options. Without a registered context it fails at runtime with a
-`NotSupportedException`, and the publish shows no warning for it.
+`Insert(0, ...)` puts the context first in the resolver chain, so it answers for
+the types it knows before any other resolver does. The alternative is to pass a
+`JsonTypeInfo` for every result yourself, for example
+`Results.Json(ex.Message, AppJsonContext.Default.String, statusCode: 400)`.
 
 ### Step 6: Keep DI registrations visible to the trimmer
 

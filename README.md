@@ -46,9 +46,18 @@ same number:
 | `reference/03-native-aot-ready/` | `PublishAot`, all fixes | Warning-free publish, deployable, benchmarkable |
 | `reference/03-native-aot-single-purpose/` | Native AOT, no ASP.NET Core | Same `POST /orders`; direct API Gateway handler, no ASP.NET Core or Powertools |
 
-`02-snapstart/` and `03-native-aot/` are committed as copies of `01-managed/`, so the repo always starts from a clean managed baseline. `02-snapstart` gets SnapStart and then priming. `03-native-aot` gets `<PublishAot>true</PublishAot>`, which produces the Native AOT warnings and failures described below.
+`02-snapstart/` and `03-native-aot/` are committed as copies of `01-managed/`, so the repo always starts from a clean managed baseline. `02-snapstart` gets SnapStart and then priming. `03-native-aot` gets `<PublishAot>true</PublishAot>`, which produces the Native AOT warnings and the failure described below.
 
 Every variant except `reference/03-native-aot-single-purpose` also exposes a health endpoint on `GET /health`.
+
+To make the chapter changes yourself, use the VS Code snippets in
+`.vscode/snippets.code-snippets`. They insert the code from `reference/`, plus
+one optional extra. Type a prefix and pick the snippet: `SnapStartEnableInSam`
+in `template.yaml`, `SnapStartWarmupRequests` or `SnapStartBeforeSnapshotHook`
+in `Program.cs`, `AotEnable` in the `.csproj`, `AotImports`, `AotSerialization`
+and `AotHttpJsonOptions` in `Program.cs`, and `AotAppJsonContext` in a new
+`AppJsonContext.cs`. The extra is `SnapStartAfterRestoreHook`, an after-restore
+hook.
 
 ---
 
@@ -92,6 +101,8 @@ reference/                      finished states, same shape as a chapter
 
 bench/                          benchmark harness, shared across variants
   internal/                     helpers the top-level scripts call
+.vscode/
+  snippets.code-snippets        VS Code snippets for the chapter changes
 Modernization-Patterns.md       steps for applying the techniques to real projects
 Library-Compatibility-Matrix.md AOT/trim + SnapStart status per library
 REFERENCES.md                   further reading

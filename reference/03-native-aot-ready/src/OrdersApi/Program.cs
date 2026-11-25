@@ -14,6 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi,
     new SourceGeneratorLambdaJsonSerializer<AppJsonContext>());
 
+// Use the source-generated context for results the framework serializes, such as Results.BadRequest
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonContext.Default));
+
 // Add Powertools structured logging (captures cold start, function name, memory, etc.)
 builder.Logging.ClearProviders();
 builder.Logging.AddPowertoolsLogger();
@@ -39,7 +43,7 @@ app.MapPost("/orders", async (HttpContext context, IOrderService orderService) =
             context.Request.Body, AppJsonContext.Default.OrderRequest);
 
         if (request is null)
-            return Results.Json("Invalid request body.", AppJsonContext.Default.String, statusCode: 400);
+            return Results.BadRequest("Invalid request body.");
 
         var response = await orderService.CreateOrderAsync(request);
         Logger.LogInformation("Order created: {orderId}", response.OrderId);
@@ -48,12 +52,12 @@ app.MapPost("/orders", async (HttpContext context, IOrderService orderService) =
     }
     catch (JsonException)
     {
-        return Results.Json("Invalid request body.", AppJsonContext.Default.String, statusCode: 400);
+        return Results.BadRequest("Invalid request body.");
     }
     catch (ArgumentException ex)
     {
         Logger.LogWarning("Validation failed: {error}", ex.Message);
-        return Results.Json(ex.Message, AppJsonContext.Default.String, statusCode: 400);
+        return Results.BadRequest(ex.Message);
     }
 });
 

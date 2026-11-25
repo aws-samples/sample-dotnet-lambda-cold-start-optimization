@@ -543,26 +543,30 @@ covers the annotations and when a suppression is valid, and AWS documents
 In this repo, `OrderRepository.cs` uses the low-level DynamoDB API of the AWS
 SDK for .NET V4 and raised no warnings.
 
-Warnings raised **inside a vendor's own code** can't be fixed from yours. In
-this repo, `AWS.Lambda.Powertools.Logging` emits warnings from its internal
-serializer and exception handling.
-`reference/03-native-aot-ready` silences them with a project-wide suppression:
+Warnings raised **inside a vendor's own code** can't be fixed from yours.
+`AWS.Lambda.Powertools.Logging` raised some before 3.3.0, from its internal
+serializer and exception handling. On 3.3.0 or later,
+`reference/03-native-aot-ready` publishes without any warnings and without a
+suppression ([3.3.0 release notes](https://github.com/aws-powertools/powertools-lambda-dotnet/releases/tag/3.3.0)).
+If a library you use still warns, check for a newer version first. If none
+fixes it and you've confirmed the warnings are safe, suppress them:
 
 ```xml
-<TrimmerSingleWarn>true</TrimmerSingleWarn>
-<NoWarn>$(NoWarn);IL2026;IL2104;IL3050;IL3053</NoWarn>
+<NoWarn>$(NoWarn);IL2104;IL3053</NoWarn>
 ```
 
-`NoWarn` is the standard MSBuild way to suppress warning codes.
-`TrimmerSingleWarn`, which is already on by default, collapses each package's
-warnings into one summary warning per assembly
+`NoWarn` is the standard MSBuild way to suppress warning codes. `IL2104` (trim)
+and `IL3053` (AOT) are the per-assembly summaries you see, because
+`TrimmerSingleWarn` is on by default and collapses each package's warnings into
+one
 ([Trimming options](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options)).
 The cost is that `NoWarn` applies to the whole publish. `IL2104` and `IL3053`
-hide new warnings from **every** package, and `IL2026` and `IL3050` hide them
-in your own code too. Add it last, after you've fixed everything you own,
-and record which warnings you fixed and which you silenced. A narrower-looking
-option doesn't help either: NuGet documents `NoWarn` metadata on a
-`PackageReference` for NuGet (`NU*`) warnings, not trimmer warnings
+hide new warnings from **every** package, and suppressing the per-call codes
+(`IL2026`, `IL3050`) hides them in your own code too. Add it last, after you've
+fixed everything you own, and record which warnings you fixed and which you
+silenced. A narrower-looking option doesn't help either: NuGet documents
+`NoWarn` metadata on a `PackageReference` for NuGet (`NU*`) warnings, not
+trimmer warnings
 ([PackageReference in project files](https://learn.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files)).
 
 ### Step 8: Build for the right OS and architecture
@@ -650,7 +654,7 @@ Microsoft makes the same point for ASP.NET Core: including fewer features helps
 both trimming and AOT
 ([CreateSlimBuilder](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/native-aot)).
 Less framework means less to initialize and fewer referenced assemblies to
-trim or suppress.
+trim.
 
 ### When it fits
 
@@ -703,8 +707,7 @@ What changes from Pattern 2:
 |---|---|
 | `Microsoft.NET.Sdk.Web` | No ASP.NET Core host to start. |
 | `Amazon.Lambda.AspNetCoreServer.Hosting` | API Gateway events go straight to your handler. |
-| `AWS.Lambda.Powertools.Logging` | Removes its init cost and the vendor trim warnings from Pattern 2, Step 7. |
-| `NoWarn` / `TrimmerSingleWarn` | Start with none. Add a suppression only once a publish actually emits a warning you can't fix. |
+| `AWS.Lambda.Powertools.Logging` | Removes its init cost. |
 
 `Microsoft.Extensions.DependencyInjection` is optional. With only a few services
 you could `new` them by hand. Keeping DI here keeps the
@@ -812,10 +815,10 @@ diffed against the baseline, and cold starts measured with identical settings.
 
 | Concern | SnapStart (managed) | Native AOT |
 |---|---|---|
-| Code change size | Small: hooks in `Program.cs` | Medium: source-generated serialization, plus suppressing library warnings you can't fix |
+| Code change size | Small: hooks in `Program.cs` | Medium: source-generated serialization and trim fixes |
 | Reflection-heavy libraries | Fine | Must be replaced or annotated |
 | Cold start metric | `Restore Duration + Duration` | `Init Duration + Duration` |
-| Main pitfall | Unprimed paths, frozen unique state | Runtime failures from missing metadata; vendor warnings you can only suppress |
+| Main pitfall | Unprimed paths, frozen unique state | Runtime failures from missing metadata |
 | Build constraint | None | Amazon Linux 2023, on the function's architecture |
 | Deploy constraint | Invoke a version or alias, never `$LATEST` | Package must contain no managed `.dll` beside the binary |
 | .NET security patches | Applied by AWS to the managed runtime | Rebuild with a current build image and redeploy |

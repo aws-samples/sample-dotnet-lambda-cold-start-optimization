@@ -224,49 +224,37 @@ managed variants compile to architecture-neutral IL and build from any host.
 
 ---
 
-## Native AOT failures and fixes
+## Native AOT failure and fix
 
 Add `<PublishAot>true</PublishAot>` to `03-native-aot/` and publish, and the
-failures below surface in order. Diff `03-native-aot/` against
+serialization failure below surfaces. Diff `03-native-aot/` against
 `reference/03-native-aot-ready/` to see every change at once.
 
-1. **Serialization.** Native AOT turns off reflection-based JSON
-   serialization
-   ([Disable reflection defaults](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation#disable-reflection-defaults)).
-   The build already warns about it: `IL2026` on `AddAWSLambdaHosting` says
-   that for Native AOT the overload taking a `SourceGeneratorLambdaJsonSerializer`
-   must be used, and `IL2026` / `IL3050` flag the handler's `JsonSerializer`
-   calls. Deployed anyway, the function fails on the first request, before the
-   handler runs. The default event serializer can't read the API Gateway event,
-   API Gateway returns a `502`, and the log shows:
+Native AOT turns off reflection-based JSON serialization
+([Disable reflection defaults](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation#disable-reflection-defaults)).
+The build already warns about it: `IL2026` on `AddAWSLambdaHosting` says
+that for Native AOT the overload taking a `SourceGeneratorLambdaJsonSerializer`
+must be used, and `IL2026` / `IL3050` flag the handler's `JsonSerializer`
+calls. Deployed anyway, the function fails on the first request, before the
+handler runs. The default event serializer can't read the API Gateway event,
+API Gateway returns a `502`, and the log shows:
 
-   ```
-   Amazon.Lambda.Serialization.SystemTextJson.JsonSerializerException: Error converting the Lambda event JSON payload to type Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest: Reflection-based serialization has been disabled for this application. Either use the source generator APIs or explicitly configure the 'JsonSerializerOptions.TypeInfoResolver' property.
-   ```
+```
+Amazon.Lambda.Serialization.SystemTextJson.JsonSerializerException: Error converting the Lambda event JSON payload to type Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest: Reflection-based serialization has been disabled for this application. Either use the source generator APIs or explicitly configure the 'JsonSerializerOptions.TypeInfoResolver' property.
+```
 
-   Fix it with a source-generated `JsonSerializerContext`: pass
-   `SourceGeneratorLambdaJsonSerializer<AppJsonContext>` to
-   `AddAWSLambdaHosting`, and use the `JsonTypeInfo` overloads in the handler.
-2. **Trimming warnings from a library you can't change.**
-   `AWS.Lambda.Powertools.Logging` emits trim and AOT warnings from its own
-   serializer and exception handling, summarized per assembly as `IL2104` and
-   `IL3053`. Caller code can't fix them. The maintainers are working on removing
-   them ([#1328](https://github.com/aws-powertools/powertools-lambda-dotnet/issues/1328)).
-   `reference/03-native-aot-ready` suppresses them, and
-   [Modernization-Patterns.md](Modernization-Patterns.md#step-7-publish-and-handle-referenced-assembly-warnings)
-   explains what that costs.
-   `reference/03-native-aot-single-purpose` drops Powertools and needs no
-   suppression.
+Fix it with a source-generated `JsonSerializerContext`: pass
+`SourceGeneratorLambdaJsonSerializer<AppJsonContext>` to
+`AddAWSLambdaHosting`, and use the `JsonTypeInfo` overloads in the handler.
 
-The serialization warnings show up on a `dotnet build`. The Powertools Logging
-warnings need a `dotnet publish`: warnings from a *referenced* assembly come
-from the Native AOT compiler (ILC) during publish, not from the build-time
-analyzers, which only inspect the project's own code.
-
-> **`03-native-aot` has no `NoWarn`, on purpose.** `reference/03-native-aot-ready`
-> suppresses `IL2026;IL2104;IL3050;IL3053`. The same suppressions in
-> `03-native-aot` would hide both the `IL2026` / `IL3050` serialization
-> warnings and the Powertools Logging warnings.
+The serialization warnings show up on a `dotnet build`. Warnings from a
+*referenced* assembly come from the Native AOT compiler (ILC) during publish,
+not from the build-time analyzers, which only inspect the project's own code.
+With Powertools 3.3.0 or later, `reference/03-native-aot-ready` publishes with
+no warnings and no suppression
+([3.3.0 release notes](https://github.com/aws-powertools/powertools-lambda-dotnet/releases/tag/3.3.0)).
+[Modernization-Patterns.md](Modernization-Patterns.md#step-7-publish-and-handle-referenced-assembly-warnings)
+covers what to do if a library you use still warns.
 
 See [Modernization-Patterns.md](Modernization-Patterns.md)
 for the reusable patterns,

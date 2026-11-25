@@ -9,11 +9,7 @@
     <PublishAot>true</PublishAot>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <!--
-      Microsoft.NET.Sdk, not .Web: no ASP.NET Core host and no Powertools.
-      No NoWarn and no TrimmerSingleWarn yet. Add a suppression only once a
-      publish actually emits the warning, as 03-native-aot-ready's did.
-    -->
+    <!-- Microsoft.NET.Sdk, not .Web: no ASP.NET Core host and no Powertools. -->
   </PropertyGroup>
 
   <ItemGroup>

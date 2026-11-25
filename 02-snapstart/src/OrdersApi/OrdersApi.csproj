@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
-    <!-- Managed runtime + SnapStart, no priming. AOT is deliberately off. -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,11 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!--
-      No AWS.Lambda.Powertools.Metadata here. reference/02-snapstart-primed
-      needs it for LambdaMetadata.AvailabilityZoneId inside its priming hook;
-      this variant has no priming hook, so the reference would be unused.
-    -->
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="2.*" />
     <PackageReference Include="AWS.Lambda.Powertools.Logging" Version="3.*" />
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.*" />

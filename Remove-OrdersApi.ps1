@@ -24,7 +24,7 @@
 
 .EXAMPLE
     ./Remove-OrdersApi.ps1
-    All six - three chapters and three reference variants - with a
+    Every variant, the chapters and the reference variants, with a
     confirmation prompt per stack.
 
 .EXAMPLE

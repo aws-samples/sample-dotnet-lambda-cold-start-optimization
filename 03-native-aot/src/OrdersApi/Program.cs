@@ -18,33 +18,39 @@ builder.Logging.AddPowertoolsLogger();
 // Add AWS SDK
 builder.Services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
 
-builder.Services.AddSingleton(typeof(IOrderValidator), typeof(OrderValidator));
-builder.Services.AddSingleton(typeof(IOrderService), typeof(OrderService));
-builder.Services.AddSingleton(typeof(IOrderRepository), typeof(OrderRepository));
+// Add application services
+builder.Services.AddSingleton<IOrderValidator, OrderValidator>();
+builder.Services.AddSingleton<IOrderService, OrderService>();
+builder.Services.AddSingleton<IOrderRepository, OrderRepository>();
 
 var app = builder.Build();
 
 var jsonOptions = new JsonSerializerOptions
 {
-    PropertyNameCaseInsensitive = true
+    PropertyNameCaseInsensitive = true,
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 };
 
 app.MapPost("/orders", async (HttpContext context, IOrderService orderService) =>
 {
     Logger.LogInformation("Processing order request");
 
-    var request = await JsonSerializer.DeserializeAsync<OrderRequest>(
-        context.Request.Body, jsonOptions);
-
-    if (request is null)
-        return Results.BadRequest("Invalid request body.");
-
     try
     {
+        var request = await JsonSerializer.DeserializeAsync<OrderRequest>(
+            context.Request.Body, jsonOptions);
+
+        if (request is null)
+            return Results.BadRequest("Invalid request body.");
+
         var response = await orderService.CreateOrderAsync(request);
         Logger.LogInformation("Order created: {orderId}", response.OrderId);
         var json = JsonSerializer.Serialize(response, jsonOptions);
-        return Results.Content(json, "application/json", statusCode: 200);
+        return Results.Content(json, "application/json; charset=utf-8", statusCode: 200);
+    }
+    catch (JsonException)
+    {
+        return Results.BadRequest("Invalid request body.");
     }
     catch (ArgumentException ex)
     {

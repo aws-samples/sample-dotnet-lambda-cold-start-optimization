@@ -9,7 +9,12 @@
     <PublishAot>true</PublishAot>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <!-- Suppress trim/AOT warnings from external assemblies we can't fix -->
+    <!--
+      AWS.Lambda.Powertools.Logging emits trim and AOT warnings from
+      its own serializer and exception handling, which caller code can't fix.
+      NoWarn suppresses these codes for the whole project, this project's own
+      code included.
+    -->
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
     <TrimmerSingleWarn>true</TrimmerSingleWarn>
     <NoWarn>$(NoWarn);IL2026;IL2104;IL3050;IL3053</NoWarn>

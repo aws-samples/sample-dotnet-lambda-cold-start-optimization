@@ -36,7 +36,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# The three chapters live at the repo root, two levels up from bench/internal;
+# The chapters live at the repo root, two levels up from bench/internal;
 # their finished states live under reference/. The variant NAME stays flat
 # either way, so -Variant tab-completes without a slash in it and this is the
 # one place that knows about the extra directory level.

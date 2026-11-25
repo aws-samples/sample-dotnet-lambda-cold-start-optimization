@@ -11,8 +11,8 @@
     concurrency to see how Lambda reuses execution environments under load.
     Use Measure-ColdStart.ps1 when you want cold samples on purpose.
 
-    Omit -Variant to measure every variant worth measuring, or name the ones you
-    want. -Invocations, -Concurrency and -Region are single-valued, so one call
+    Omit -Variant to measure every variant, or name the ones you want.
+    -Invocations, -Concurrency and -Region are single-valued, so one call
     applies the same load to every variant and the ratios are comparable. One
     variant failing is reported and does not stop the rest.
 
@@ -34,8 +34,8 @@
 
 .EXAMPLE
     ./bench/Measure-ColdWarmRatio.ps1
-    Every variant except 03-native-aot, five hundred requests each at a
-    concurrency of ten, with a summary table at the end.
+    Every variant, five hundred requests each at a concurrency of ten, with a
+    summary table at the end.
 
 .EXAMPLE
     ./bench/Measure-ColdWarmRatio.ps1 02-snapstart-primed
@@ -62,12 +62,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Omitting -Variant means every variant, as it does in Measure-ColdStart.ps1.
-# 03-native-aot is absent for the same reason: as committed it fails at
-# runtime on purpose, so it has no ratio worth reporting. Name it explicitly
-# if you want to watch it fail.
 if (-not $Variant) {
     $Variant = @('01-managed', '02-snapstart', '02-snapstart-primed',
-        '03-native-aot-ready', '03-native-aot-single-purpose')
+        '03-native-aot', '03-native-aot-ready', '03-native-aot-single-purpose')
 }
 
 # One stamp per invocation, so every variant measured together shares it.

@@ -39,7 +39,7 @@
 
     The two tables for one variant may come from different runs - a redeploy
     in between, for example. The "Measured at" row in each table shows which
-    run it read. Re-run both before a number goes on a slide.
+    run it read. Re-run both before you compare the numbers.
 
     "Cold samples" and "Load samples" show collected/requested, e.g. 29/30:
     collected is counted from the file, requested is the n<count> in its name.
@@ -52,7 +52,7 @@
 
     Percentiles are nearest-rank: the value returned actually occurred in the
     sample. Interpolating between samples invents numbers that never happened,
-    which is the wrong trade when the output goes on a slide.
+    which is the wrong trade when you report the output.
 
     All parsing and formatting uses the invariant culture. On a machine whose
     locale uses a comma as the decimal separator, culture-sensitive formatting
@@ -391,7 +391,7 @@ if ($thin.Count -gt 0) {
     Write-Host ''
     Write-Host ("WARNING: fewer than $MinimumSamples cold samples for: " +
         ($thin.Variant -join ', ')) -ForegroundColor Yellow
-    Write-Host 'p99 is not meaningful at this sample size. Do not put these on a slide.' `
+    Write-Host 'p99 is not meaningful at this sample size.' `
         -ForegroundColor Yellow
 }
 Write-Host ''

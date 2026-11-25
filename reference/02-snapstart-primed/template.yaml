@@ -5,7 +5,7 @@ Description: Orders API - .NET Serverless Modernization Demo (reference 02 SnapS
 Parameters:
   AllowedCidr:
     Type: String
-    Description: IPv4 CIDR allowed to POST /orders, e.g. 203.0.113.7/32
+    Description: IPv4 CIDR allowed to POST /orders, e.g. 1.2.3.4/32
     AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
 
 Globals:
@@ -23,11 +23,11 @@ Resources:
             comment: >-
               Demo table of synthetic orders. Encrypted at rest with the
               AWS owned key by default; a customer managed KMS key adds
-              cost and key policy outside the scope of the talk.
+              cost and key policy outside the scope of this sample.
           - id: CKV_AWS_28
             comment: >-
               Short-lived demo table of synthetic orders, deleted by
-              Remove-OrdersApi.ps1 after the talk. Point-in-time recovery
+              Remove-OrdersApi.ps1 when you're done. Point-in-time recovery
               would have nothing worth restoring.
     Properties:
       BillingMode: PAY_PER_REQUEST
@@ -72,9 +72,9 @@ Resources:
                 - dynamodb:PutItem
               Resource: !GetAtt OrdersTable.Arn
       Events:
-        # No authorizer on POST /orders, on purpose. This is a conference
-        # demo of cold-start latency on synthetic data, torn down after the
-        # talk, and an authorizer would add its own latency to every number.
+        # No authorizer on POST /orders, on purpose. This is a demo of
+        # cold-start latency on synthetic data, meant to be torn down after
+        # use, so it stays focused on cold start and leaves auth out.
         # A resource policy limits the route to the AllowedCidr source range
         # instead. That narrows who can call it but doesn't authenticate
         # anyone, so before reusing this template, add IAM, Cognito or a

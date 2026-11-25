@@ -7,11 +7,11 @@
 
 .DESCRIPTION
     Resolves the variant to its API URL, posts valid orders through
-    internal/Invoke-OrdersApi.ps1, then summarises: wall clock, how many
+    internal/Invoke-OrdersApi.ps1, then summarizes: wall clock, how many
     succeeded and failed, and the first few failures.
 
     With -Count greater than 1 every request is dispatched before any is
-    awaited, so they are genuinely in flight together. That matters: a Lambda
+    awaited, so they are in flight at the same time. That matters: a Lambda
     execution environment serves one request at a time, so only overlapping
     requests force new environments. Anything dispatching slower than the
     handler completes (~10 ms warm here) sees the same environment reused and

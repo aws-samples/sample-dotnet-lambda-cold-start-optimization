@@ -11,7 +11,7 @@
     so it never has to resolve a stack itself.
 
     Dispatches every request in a wave before awaiting any of it, so they are
-    genuinely in flight together. That is the whole point: a Lambda execution
+    in flight at the same time. This matters because a Lambda execution
     environment serves one request at a time, so only overlapping requests force
     new environments. Anything that dispatches slower than the handler completes
     (~10 ms warm here) sees the same environment reused and produces almost no

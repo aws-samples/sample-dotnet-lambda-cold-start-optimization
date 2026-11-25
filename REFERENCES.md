@@ -1,7 +1,7 @@
 # References
 
 Further reading for SVS344, *Modernizing .NET to Serverless: Native AOT and
-SnapStart, Live*.
+SnapStart, live.*
 
 ## SnapStart
 
@@ -27,10 +27,10 @@ SnapStart, Live*.
 
 - [.NET 10 runtime now available in AWS Lambda](https://aws.amazon.com/blogs/compute/net-10-runtime-now-available-in-aws-lambda/)
   (AWS Compute Blog). The launch post for `dotnet10`, the runtime every
-  variant in the talk uses. Covers file-based C# functions, which publish as
+  variant in this repo uses. Covers file-based C# functions, which publish as
   Native AOT by default, and the Native AOT improvements in .NET 10.
-- [Compile .NET Lambda function code to a native runtime format](https://docs.aws.amazon.com/lambda/latest/dg/dotnet-native-aot.html)
-  (AWS docs). Building and deploying a .NET Lambda function with Native AOT.
+- [Compile .NET Lambda Event Function code to a native runtime format](https://docs.aws.amazon.com/lambda/latest/dg/dotnet-native-aot.html)
+  (AWS docs). Building and deploying a .NET Lambda Event Function with Native AOT.
 - [Native AOT deployment overview](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/)
   (Microsoft Learn). What `PublishAot` does, and its limitations.
 - [How to use source generation in System.Text.Json](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation)
@@ -38,7 +38,7 @@ SnapStart, Live*.
   `JsonSerializerContext` and `[JsonSerializable]`.
 - [Fixing trim warnings](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/fixing-warnings)
   (Microsoft Learn). How to read and resolve `IL2xxx` warnings like the ones
-  the AWS SDK raises in the talk.
+  Powertools Logging raises in `reference/03-native-aot-ready`.
 
 ## Videos
 

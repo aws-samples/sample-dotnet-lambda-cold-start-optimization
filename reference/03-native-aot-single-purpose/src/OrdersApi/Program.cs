@@ -17,7 +17,7 @@ using OrdersApi.Services;
 ServiceCollection services = new();
 services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
 services.AddSingleton<IOrderValidator, OrderValidator>();
-services.AddSingleton<IOrderRepository, OrderRepositoryAot>();
+services.AddSingleton<IOrderRepository, OrderRepository>();
 services.AddSingleton<IOrderService, OrderService>();
 
 // Resolved during init, so the DynamoDB client is built before the first
@@ -33,7 +33,7 @@ async Task<APIGatewayProxyResponse> CreateOrderAsync(
         OrderRequest? order = JsonSerializer.Deserialize(
             request.Body ?? "", AppJsonContext.Default.OrderRequest);
         if (order is null)
-            return Respond(400, "Invalid request body.");
+            return Error("Invalid request body.");
 
         OrderResponse response = await orderService.CreateOrderAsync(order);
         return Respond(200, JsonSerializer.Serialize(
@@ -41,24 +41,24 @@ async Task<APIGatewayProxyResponse> CreateOrderAsync(
     }
     catch (JsonException)
     {
-        return Respond(400, "Invalid request body.");
+        return Error("Invalid request body.");
     }
     catch (ArgumentException ex)
     {
-        return Respond(400, ex.Message);
+        return Error(ex.Message);
     }
 }
 
-static APIGatewayProxyResponse Respond(int statusCode, string body) => new()
+// Every response is JSON, so error messages match the ASP.NET Core variants.
+static APIGatewayProxyResponse Respond(int statusCode, string json) => new()
 {
     StatusCode = statusCode,
-    Body = body,
-    Headers = new Dictionary<string, string>
-    {
-        ["Content-Type"] = statusCode == 200
-            ? "application/json" : "text/plain"
-    }
+    Body = json,
+    Headers = new Dictionary<string, string> { ["Content-Type"] = "application/json; charset=utf-8" }
 };
+
+static APIGatewayProxyResponse Error(string message) =>
+    Respond(400, JsonSerializer.Serialize(message, AppJsonContext.Default.String));
 
 await LambdaBootstrapBuilder
     .Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(

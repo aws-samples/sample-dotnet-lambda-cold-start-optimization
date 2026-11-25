@@ -1,21 +1,21 @@
-# .NET Serverless Modernization — Library Compatibility Matrix
+# .NET Serverless Modernization - Library Compatibility Matrix
 
-**Companion deliverable for:** *Modernizing .NET to Serverless: Native AOT and SnapStart, Live* **Purpose:** A quick-reference for whether common .NET libraries survive **Native AOT / trimming**, and how they behave under **SnapStart**. Use it to check your dependencies *before* you attempt AOT.
+This companion to the SVS344 code talk shows whether common .NET libraries work with **Native AOT and trimming**, and how they behave under **SnapStart**. Check your dependencies here before you attempt AOT.
 
-> ⚠️ **Verify against your own build.** AOT/trimming behavior shifts across library and .NET SDK versions. The statuses below are a starting point and the *patterns* are the durable takeaway — confirm the specifics for your versions on your own `dotnet publish`. The presenter should validate every row against the actual demo build before the talk.
+> ⚠️ **Verify against your own build.** AOT and trimming behavior changes between library and .NET SDK versions, so these statuses can go out of date as new versions are published. Treat them as a starting point, and confirm them on your own `dotnet publish`.
 >
-> Rows that link to a source are backed by vendor, AWS or Microsoft documentation, or by the library's own repository. Rows marked *(observed in this repo)* come from building and deploying this code and have no published source. See [Modernization-Patterns.md](Modernization-Patterns.md) for the full steps.
->
-> **"Declares `IsAotCompatible`"** means the library's project file on its default branch sets that property, which turns on the AOT analyzers for the library's own build ([Native AOT deployment](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/#aot-compatibility-analyzers)). Checked November 2026, and not against each released package. It's a strong signal, not a guarantee. Third-party rows weren't published or deployed in this repo.
+> Rows that link to a source are backed by vendor, AWS or Microsoft documentation, or by the library's own repository. Statements about this repo come from building and deploying its code. "Declares `IsAotCompatible`" means the library's project file on its default branch sets that property, which runs the AOT analyzers on the library's own code ([Native AOT deployment](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/#aot-compatibility-analyzers)). Those checks were made in November 2026. A declaration is a strong signal, not a guarantee.
 
 ## Legend
 
 | Symbol | Meaning |
 | --- | --- |
-| ✅ | AOT/trim-safe — works with little or no change |
-| ⚠️ | Works **with care** — needs source generators, annotations, or specific usage patterns |
-| ❌ | AOT-hostile today — avoid on AOT paths; use an alternative |
-| n/a | Not an AOT concern (runtime/config-level) |
+| ✅ | AOT/trim-safe: works with little or no change |
+| ✅\* | Works, but the publish still shows warnings that the library's maintainers are fixing; the row links the details |
+| ⚠️ | Works **with care**: needs source generators, annotations, or specific usage patterns |
+| ❌ | AOT-hostile today: avoid on AOT paths, and use an alternative |
+
+In the SnapStart column, ⚠️ means the library works, but connections or state it creates during init must be checked or re-created after restore.
 
 ---
 
@@ -23,43 +23,43 @@
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
-| System.Text.Json — **source generators** | ✅ | ✅ | Use `JsonSerializerContext` with `[JsonSerializable]`. The recommended path. *(Demo Failure #1 fix.)* |
-| System.Text.Json — reflection default | ❌ | ✅ | Reflection-based resolver breaks under trimming. Switch to source-gen. |
-| Newtonsoft.Json (Json.NET) | ❌ | ✅ | Heavily reflection-based; not AOT-friendly. Migrate to System.Text.Json source-gen for AOT paths. |
+| System.Text.Json: **source generators** | ✅ | ✅ | Use `JsonSerializerContext` with `[JsonSerializable]`. The recommended path. *(The fix in `reference/03-native-aot-ready`.)* |
+| System.Text.Json: reflection default | ❌ | ✅ | With trimming, which Native AOT turns on, reflection-based serialization is disabled by default and calls throw `InvalidOperationException` ([Disable reflection defaults](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation#disable-reflection-defaults)). Switch to source generation. |
+| Newtonsoft.Json (Json.NET) | ❌ | ✅ | Heavily reflection-based, and it doesn't declare `IsAotCompatible`. Since 13.0.4 it's annotated for trimming and AOT, so the warnings show up at your own call sites ([Json.NET releases](https://github.com/JamesNK/Newtonsoft.Json/releases)). Migrate to System.Text.Json source generation on AOT paths. |
 
 ## Dependency Injection
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
-| Microsoft.Extensions.DependencyInjection — **explicit registration** | ✅ | ✅ | `AddSingleton<Interface, Impl>()` and `AddSingleton(typeof(Interface), typeof(Impl))` are both trim-safe: each marks the implementation type `[DynamicallyAccessedMembers(PublicConstructors)]`, so its constructors are kept ([dotnet/runtime source](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.DependencyInjection.Abstractions/src/ServiceCollectionServiceExtensions.cs)). Prefer the generic form for readability. The `Type` form published with no warning and resolved at runtime *(observed in this repo)*. *(Demo Failure #2's "fix".)* |
-| DI via assembly scanning / convention | ❌ | ✅ | Reflection-discovered registrations are invisible to the trimmer. Register explicitly. |
+| Microsoft.Extensions.DependencyInjection: **explicit registration** | ✅ | ✅ | Trim-safe when the types are known at compile time, because the trimmer keeps the constructors of explicitly registered types. [Pattern 2, Step 6](Modernization-Patterns.md#step-6-keep-di-registrations-visible-to-the-trimmer) has the detail and the source. This repo uses the generic form. |
+| DI via assembly scanning / convention | ❌ | ✅ | Reflection-discovered registrations are invisible to the trimmer. Microsoft's guidance suggests registering services explicitly or using source-generated DI ([Fixing trim warnings](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/fixing-warnings)). |
 | Scrutor | ❌ | ✅ | Assembly scanning is what the library does, and it doesn't declare `IsAotCompatible`. An open request for Native AOT support has no fix, and the maintainer said Scrutor's fluent API would be hard to move to a source generator ([Scrutor #232](https://github.com/khellang/Scrutor/issues/232)). Replace it with explicit registrations on AOT paths. |
-| Third-party containers (Autofac, etc.) | ⚠️ | ✅ | Reflection-heavy; verify AOT support for your version or stick to the built-in container. |
+| Autofac (and other third-party containers) | ⚠️ | ✅ | Autofac declares `IsAotCompatible`, and its docs say it works with trimming and Native AOT ([Native AOT and trimming](https://autofac.readthedocs.io/en/latest/advanced/native-aot-trimming.html)). Registering concrete types, lambdas and modules is AOT-safe; assembly scanning, `RegisterGeneric` and generated factories raise warnings. Other containers weren't checked, so verify yours or use the built-in container. |
 
 ## AWS
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
-| AWS SDK for .NET (e.g. AWSSDK.DynamoDBv2) | ⚠️ | ✅ | Emits `IL2xxx` trimming warnings. AWS says the SDK doesn't support trimming, and that parts of libraries can still be trimmed out after the warnings are gone ([Lambda Native AOT](https://docs.aws.amazon.com/lambda/latest/dg/dotnet-native-aot.html#dotnet-native-aot-trimming)). Use the low-level API, keep members with `[DynamicDependency]`, and pair it with `[UnconditionalSuppressMessage]`, since `[DynamicDependency]` alone doesn't silence warnings ([Prepare .NET libraries for trimming](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/prepare-libraries-for-trimming)). `TrimmerRootAssembly` is AWS's other lever. Test the deployed function. *(Demo Failure #3.)* |
-| AWS Lambda .NET runtime (Amazon.Lambda.*) | ✅ | ✅ | AOT-supported; use the AOT Lambda project template. Note the template sets `TrimMode=partial` because of the AWS SDK ([Getting started](https://docs.aws.amazon.com/lambda/latest/dg/dotnet-native-aot.html#dotnet-native-aot-getting-started)). |
-| Amazon.Lambda.AspNetCoreServer | ⚠️ | ✅ | Works; validate trimming on the ASP.NET hosting path for your version. |
+| AWS SDK for .NET (e.g. AWSSDK.DynamoDBv2) | ✅ | ✅ | The V4 SDK includes Native AOT support ([Platforms supported by the AWS SDK for .NET](https://docs.aws.amazon.com/sdk-for-net/v4/developer-guide/net-dg-supported-platforms.html)). In this repo, the low-level `PutItemAsync` API in `AWSSDK.DynamoDBv2` 4.1 published with no warnings and worked when deployed. |
+| AWS Lambda .NET runtime (Amazon.Lambda.*) | ✅ | ✅ | AOT-supported; use the AOT Lambda project template. The template sets `TrimMode=partial`, which gives a larger executable ([Getting started](https://docs.aws.amazon.com/lambda/latest/dg/dotnet-native-aot.html#dotnet-native-aot-getting-started)). This repo uses the default `full` and publishes without SDK warnings. |
+| Amazon.Lambda.AspNetCoreServer.Hosting | ⚠️ | ✅ | The `AddAWSLambdaHosting` overload without a serializer relies on reflection and warns under AOT; pass a `SourceGeneratorLambdaJsonSerializer` instead ([ServiceCollectionExtensions.cs](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.AspNetCoreServer.Hosting/ServiceCollectionExtensions.cs)). The package declares `IsTrimmable` but not `IsAotCompatible`, so validate the hosting path on a real publish. |
 
-## Relational data access *(addressed on the "Most of you are on Postgres/SQL Server" slide)*
+## Relational data access
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
 | **Dapper** | ❌ | ✅ | Plain Dapper relies on reflection and ref-emit, which is what Dapper.AOT exists to replace ([Dapper.AOT](https://aot.dapperlib.dev/)). Fine on SnapStart and the managed runtime. |
-| **Dapper.AOT** | ⚠️ | ✅ | Build-time interceptors replace your Dapper calls with generated code, without reflection or ref-emit ([Dapper.AOT](https://aot.dapperlib.dev/)). Dapper itself still had reachable trim-unsafe fallback paths under Native AOT until Sep 2026, so use a current Dapper version ([Dapper #2232](https://github.com/DapperLib/Dapper/issues/2232), [#2233](https://github.com/DapperLib/Dapper/pull/2233)). Verify your queries on a real publish. |
-| **Npgsql** (raw ADO.NET) | ⚠️ | ✅ | Usable with care; validate trimming on ADO.NET paths. Persistent connections need RDS Proxy under Lambda scaling. |
-| **EF Core** | ❌ | ✅ | AOT-hostile today (heavy reflection / runtime model building). For AOT paths use Dapper.AOT or the RDS Data API. Fine on SnapStart. |
-| **RDS Data API** (HTTP) | ✅ | ✅ | No persistent connections — serverless-friendly and AOT-safe. Good relational choice for AOT. |
+| **Dapper.AOT** | ⚠️ | ✅ | Build-time interceptors replace your Dapper calls with generated code, without reflection or ref-emit ([Dapper.AOT](https://aot.dapperlib.dev/)). Before Dapper 2.1.89 (Sep 2026), a Dapper.AOT publish still showed trim and AOT warnings from Dapper's own fallback code, so use 2.1.89 or later ([Dapper #2232](https://github.com/DapperLib/Dapper/issues/2232), [#2233](https://github.com/DapperLib/Dapper/pull/2233)). Verify your queries on a real publish. |
+| **Npgsql** (raw ADO.NET) | ✅ | ✅ | Supports Native AOT and trimming since 8.0, with the whole library annotated ([Npgsql 8.0 release notes](https://www.npgsql.org/doc/release-notes/8.0.html)). A few features, such as [dynamic JSON mapping of POCOs](https://www.npgsql.org/doc/release-notes/8.0.html#json-poco-and-other-dynamic-features-now-require-an-explicit-opt-in), need opt-ins that warn under AOT. Persistent connections need RDS Proxy under Lambda scaling. |
+| **EF Core** | ❌ | ✅ | Native AOT with precompiled queries exists but is experimental, and Microsoft recommends against it in production ([NativeAOT and precompiled queries](https://learn.microsoft.com/en-us/ef/core/performance/nativeaot-and-precompiled-queries)). For AOT paths use Dapper.AOT or the RDS Data API. Fine on SnapStart. |
+| **RDS Data API** (HTTP, Aurora only) | ✅ | ✅ | An HTTP API, so there are no persistent connections to manage ([RDS Data API](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/data-api.html)). You call it through the AWS SDK for .NET V4, which includes Native AOT support. Parse JSON-formatted results through your own source-generated context. |
 
 ## Caching and document databases
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
-| StackExchange.Redis | ⚠️ | ⚠️ | Doesn't declare `IsAotCompatible`, but the maintainers fixed an AOT-specific bug in Aug 2026 and added an AOT demo project for net8 and net10 ([PR #3158](https://github.com/StackExchange/StackExchange.Redis/pull/3158)). Test on a real publish. On SnapStart, a `ConnectionMultiplexer` created at init is a connection you opened yourself, so check or re-establish it after restore ([Networking best practices](https://docs.aws.amazon.com/lambda/latest/dg/snapstart-best-practices.html#snapstart-networking)). |
-| MongoDB.Driver | ❌ | ⚠️ | Doesn't declare `IsAotCompatible`. A PR to annotate the driver for AOT was closed without merging in Oct 2026 ([PR #2146](https://github.com/mongodb/mongo-csharp-driver/pull/2146)), and users have reported serializer failures under .NET 8 AOT ([MongoDB forum](https://www.mongodb.com/community/forums/t/compatibility-issue-with-mongodb-driver-in-net-8-aot-environment/254649)). Use SnapStart instead. Its connection pool is opened by your code, so validate connections after restore. |
+| StackExchange.Redis | ⚠️ | ⚠️ | Doesn't declare `IsAotCompatible`, but the maintainers fixed an AOT-specific bug in Aug 2026 and added an AOT demo project for net8 and net10 ([PR #3158](https://github.com/seredis/StackExchange.Redis/pull/3158)). Test on a real publish. On SnapStart, a `ConnectionMultiplexer` created at init is a connection you opened yourself, so check or re-establish it after restore ([Networking best practices](https://docs.aws.amazon.com/lambda/latest/dg/snapstart-best-practices.html#snapstart-networking)). |
+| MongoDB.Driver | ❌ | ⚠️ | Doesn't declare `IsAotCompatible`. Trimming support is an open backlog item with no fix version ([CSHARP-4840](https://jira.mongodb.org/browse/CSHARP-4840)), and users have reported serializer failures under .NET 8 AOT ([MongoDB forum](https://www.mongodb.com/community/forums/t/compatibility-issue-with-mongodb-driver-in-net-8-aot-environment/254649)). Use SnapStart instead. Its connection pool is opened by your code, so validate connections after restore. |
 
 ## Messaging
 
@@ -72,54 +72,39 @@
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
-| Polly v8 (`Polly.Core`, `Polly.Extensions`) | ✅ | ✅ | Both declare `IsAotCompatible` ([Polly.Core.csproj](https://github.com/App-vNext/Polly/blob/main/src/Polly.Core/Polly.Core.csproj)), and the project validates AOT in CI ([PR #1745](https://github.com/App-vNext/Polly/pull/1745)). The legacy `Polly` package (v7-style API) doesn't declare it. Use the v8 resilience pipeline API on AOT paths. |
-| Refit | ✅ | ✅ | Declares `IsAotCompatible` and `IsTrimmable` ([Refit.csproj](https://github.com/reactiveui/refit/blob/main/src/Refit/Refit.csproj)). Your request and response types still go through System.Text.Json, so give it a source-generated context, as in [Modernization-Patterns.md](Modernization-Patterns.md) Pattern 2. |
+| Polly v8 (`Polly.Core`, `Polly.Extensions`) | ✅ | ✅ | Both declare `IsAotCompatible` ([Polly.Core.csproj](https://github.com/App-vNext/Polly/blob/main/src/Polly.Core/Polly.Core.csproj)), and the project fixed its AOT issues and validates AOT in CI ([Polly #1737](https://github.com/App-vNext/Polly/pull/1737)). The legacy `Polly` package (v7-style API) doesn't declare it. Use the v8 resilience pipeline API on AOT paths. |
+| Refit | ✅ | ✅ | Declares `IsAotCompatible` and `IsTrimmable` ([Refit.csproj](https://github.com/reactiveui/refit/blob/main/src/Refit/Refit.csproj)). Your request and response types still go through System.Text.Json, so give it a source-generated context, as in [Pattern 2, Step 3](Modernization-Patterns.md#step-3-create-a-source-generated-json-context). |
 
 ## Mapping and mediators
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
-| AutoMapper | ⚠️ | ✅ | Doesn't declare `IsAotCompatible`, and no maintainer guidance on AOT turned up in its docs or issues. AutoMapper builds an expression-tree execution plan for each map ([Understanding your mapping](https://docs.automapper.io/en/latest/Understanding-your-mapping.html)), and on Native AOT expression trees always run interpreted, which is slower ([Native AOT limitations](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/)). On AOT paths, prefer hand-written mapping. On SnapStart, prime your maps so building the plan happens before the snapshot. |
-| MediatR | ⚠️ | ✅ | Doesn't declare `IsAotCompatible`. The AOT support request was closed for inactivity with no maintainer reply ([MediatR #892](https://github.com/LuckyPennySoftware/MediatR/issues/892)). Handler discovery by assembly scanning has the same problem as the DI scanning row above. Register handlers explicitly, or use a source-generated mediator. |
+| AutoMapper | ⚠️ | ✅ | Doesn't declare `IsAotCompatible`. AutoMapper builds an expression-tree execution plan for each map ([Understanding your mapping](https://docs.automapper.io/en/latest/Understanding-your-mapping.html)), and on Native AOT expression trees always run interpreted, which is slower ([Native AOT limitations](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/)). On AOT paths, prefer hand-written mapping. On SnapStart, prime your maps so building the plan happens before the snapshot. |
+| MediatR | ⚠️ | ✅ | Doesn't declare `IsAotCompatible`. The AOT support request was closed without a fix ([MediatR #892](https://github.com/LuckyPennySoftware/MediatR/issues/892)). Handler discovery by assembly scanning has the same problem as the DI scanning row above. Register handlers explicitly, or use a source-generated mediator. |
 
 ## API documentation
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
 | Swashbuckle.AspNetCore | ❌ | ✅ | A maintainer said full AOT support would amount to a rewrite, and pointed AOT users to `Microsoft.AspNetCore.OpenApi` ([#3913](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/3913)). |
-| Microsoft.AspNetCore.OpenApi | ✅ | ✅ | Microsoft documents it as supporting trimming and Native AOT ([Generate OpenAPI documents](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/aspnetcore-openapi)). Also consider whether a Lambda function needs to serve its own OpenAPI document at all. |
+| Microsoft.AspNetCore.OpenApi | ✅ | ✅ | Microsoft documents it as supporting trimming and Native AOT ([Generate OpenAPI documents](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/aspnetcore-openapi)). Also consider whether a Lambda Event Function needs to serve its own OpenAPI document at all. |
 
-## Connection management *(runtime concern, not AOT)*
-
-| Concern | AOT / trim-safe? | Guidance |
-| --- | --- | --- |
-| RDS Proxy | n/a | Pools connections so Lambda scaling doesn't exhaust the DB. Use for persistent-connection drivers (Npgsql/EF Core). |
-| VPC attachment | n/a | Adds cold-start/networking cost — measure separately; irrelevant to AOT compatibility. |
-
-## Logging / observability
+## Logging and observability
 
 | Library | AOT / trim-safe? | SnapStart | Guidance |
 | --- | --- | --- | --- |
-| Microsoft.Extensions.Logging | ✅ | ✅ | Works; prefer source-gen logging (`[LoggerMessage]`) for AOT. |
-| Serilog | ⚠️ | ✅ | Sink/enricher discovery can be reflection-based; verify your sinks under trimming. |
-| NLog 6 | ✅ | ✅ | NLog 6.0 supports AOT builds without warnings ([NLog 6.0 released](https://nlog-project.org/2025/06/21/nlog-6-0-released.html)), and the project declares `IsAotCompatible` for net6+ ([NLog.csproj](https://github.com/NLog/NLog/blob/dev/src/NLog/NLog.csproj)). |
+| Microsoft.Extensions.Logging | ✅ | ✅ | The standard `ILogger` extension methods are AOT-safe. Source-generated logging with `[LoggerMessage]` is faster ([Compile-time logging source generation](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging/source-generation)). |
+| Serilog | ⚠️ | ✅ | Serilog itself declares `IsAotCompatible` ([Serilog.csproj](https://github.com/serilog/serilog/blob/dev/src/Serilog/Serilog.csproj)). Configure sinks in code: loading them from configuration with Serilog.Settings.Configuration uses reflection, isn't annotated yet ([serilog-settings-configuration #371](https://github.com/serilog/serilog-settings-configuration/pull/371)), and has crashed under AOT ([serilog #2084](https://github.com/serilog/serilog/issues/2084)). Check each sink you add. |
+| NLog 6 | ✅ | ✅ | NLog 6.0 supports AOT builds without warnings ([NLog 6.0 released](https://nlog-project.org/2025/06/21/nlog-6-0-released.html)), and the project declares `IsAotCompatible` for netstandard2.1 and net6+ ([NLog.csproj](https://github.com/NLog/NLog/blob/main/src/NLog/NLog.csproj)). |
 | OpenTelemetry (SDK, OTLP exporter) | ✅ | ✅ | The SDK repo sets `IsAotCompatible` for every net8+ package by default ([Common.prod.props](https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/build/Common.prod.props)). The AspNetCore, Http, AWS and AWSLambda instrumentation packages in the contrib repo declare it too ([AWSLambda instrumentation csproj](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/main/src/OpenTelemetry.Instrumentation.AWSLambda/OpenTelemetry.Instrumentation.AWSLambda.csproj)). Check each contrib package you add, since each one declares it separately. |
-| AWS.Lambda.Powertools.Logging | ⚠️ | ✅ | Works, but emits its own `IL2026`/`IL2104`/`IL3053` warnings from its internal serializer and exception handling. Caller code can't fix them: wiring a `TypeInfoResolver` into `AddPowertoolsLogger` and per-`PackageReference` `NoWarn` both had no effect. Only a project-wide `NoWarn` silences them, which is why `reference/03-native-aot-ready` has one *(observed in this repo)*. That `NoWarn` also hides the same codes from your own code. For the fewest warnings, use `context.Logger` with JSON log format ([Structured JSON logging with .NET](https://docs.aws.amazon.com/lambda/latest/dg/csharp-logging.html)). `reference/03-native-aot-single-purpose` drops Powertools for this reason. |
+| AWS.Lambda.Powertools.Logging | ✅\* | ✅ | Works with Native AOT ([AOT support](https://docs.aws.amazon.com/powertools/dotnet/core/logging/#aot-support)). \*Version 3.2.2 still emits trim and AOT warnings from its own code (`IL2104` / `IL3053`). The maintainers have checked the warnings a default publish shows (`Exception.TargetSite` and `PowertoolsLoggingSerializer.Serialize`) and consider them safe to suppress. The team is working on removing all of them ([powertools-lambda-dotnet#1328](https://github.com/aws-powertools/powertools-lambda-dotnet/issues/1328)). `reference/03-native-aot-ready` suppresses them ([what that costs](Modernization-Patterns.md#step-7-publish-and-handle-referenced-assembly-warnings)). |
 
 ---
 
 ## How to read this for your own app
 
-1. **Serialization and DI are almost always fixable** — source generators + explicit registration. Budget for it, don't fear it.
-2. **The AWS SDK produces warnings, not walls** — annotate, then test the deployed function. A clean publish doesn't prove nothing was trimmed ([Lambda Native AOT](https://docs.aws.amazon.com/lambda/latest/dg/dotnet-native-aot.html#dotnet-native-aot-trimming)).
-3. **EF Core is the real fork in the road.** If a service needs EF Core and must be AOT, that's a rewrite (Dapper.AOT/Data API) — or a signal to use SnapStart instead, which EF Core tolerates fine. MongoDB.Driver, Confluent.Kafka and Swashbuckle are in the same position today.
-4. **SnapStart is broadly compatible** — its issues are *restore-time* (uniqueness/connections), not *trim-time*. If AOT compatibility blocks you, SnapStart is the escape hatch.
-5. **Check the project file before you trust a library.** A library that declares `IsAotCompatible` runs the AOT analyzers on its own code. One that doesn't may still work, but you're the first line of testing.
-
-## SnapStart restore-time checklist (all libraries)
-
-- [ ] No unique IDs, secrets or random seeds created at init → generate them in the handler or `RegisterAfterRestore`, and use `System.Security.Cryptography.RandomNumberGenerator` for randomness ([Handling uniqueness](https://docs.aws.amazon.com/lambda/latest/dg/snapstart-uniqueness.html)).
-- [ ] Connections you opened yourself (DB drivers, raw sockets) → re-establish them in the handler or `RegisterAfterRestore`. Connections opened by an AWS SDK usually resume on their own ([Networking best practices](https://docs.aws.amazon.com/lambda/latest/dg/snapstart-best-practices.html#snapstart-networking)).
-- [ ] No temporary credentials or timestamps cached at init and reused → refresh them in the handler before use ([Compatibility considerations](https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html#snapstart-compatibility)).
-- [ ] `Dns.GetHostName()` isn't used as an environment ID → every restored environment returns the same value; generate an ID after restore ([Networking best practices](https://docs.aws.amazon.com/lambda/latest/dg/snapstart-best-practices.html#snapstart-networking)).
-
+1. **Serialization is almost always fixable** with source generators. Plan time for it.
+2. **Library warnings you can't fix need a suppression and a test.** In this repo they come from Powertools Logging. Suppress them only after checking the reflection path, then test the deployed function. A clean publish doesn't prove that nothing you need was trimmed ([Lambda Native AOT](https://docs.aws.amazon.com/lambda/latest/dg/dotnet-native-aot.html#dotnet-native-aot-trimming)).
+3. **EF Core is the main deciding factor.** If a service needs EF Core and must be AOT, that's a rewrite (Dapper.AOT/Data API), or a signal to use SnapStart instead, which works with EF Core. MongoDB.Driver, Confluent.Kafka and Swashbuckle are in the same position today.
+4. **SnapStart is broadly compatible.** Its issues show up at restore time, with unique state, connections and credentials created during init, rather than at trim time. The [restore-time checklist](Modernization-Patterns.md#step-5-handle-state-frozen-into-the-snapshot) covers them. If AOT compatibility blocks you, SnapStart is the fallback.
+5. **Check the project file before you trust a library.** A library that declares `IsAotCompatible` runs the AOT analyzers on its own code. One that doesn't may still work, but you're the first line of testing. To check every dependency at once, set `VerifyReferenceAotCompatibility` in your project: the build then warns (`IL3058`) for each reference built without `IsAotCompatible` ([Native AOT deployment](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/#verify-referenced-assemblies-are-aot-compatible)). That metadata is new in .NET 10, so libraries built against earlier versions show up too. Treat the list as a set of libraries to check, not as failures.

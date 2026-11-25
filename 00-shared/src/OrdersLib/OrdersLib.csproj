@@ -18,19 +18,11 @@
     different stacks" literally rather than approximately true.
 
     NO trim or AOT properties here on purpose. The AOT variants publish with
-    TrimMode full, so this assembly is trimmed member-by-member along with
-    theirs — that is what makes Failure #1 reproduce on the DTOs, and Failure #3
-    reproduce on OrderRepository.cs.
-
-    Two IOrderRepository implementations for DynamoDB is deliberate:
-    OrderRepository (unannotated, used by every variant but one) and
-    OrderRepositoryAot (annotated, used only by reference/03-native-aot-ready).
-    See demo-seams.md before touching either.
+    TrimMode full, so this assembly is trimmed along with theirs.
   -->
 
   <ItemGroup>
-    <!-- The only package reference. It exists for Failure #3: the SDK is the
-         realistic source of IL2xxx trimming warnings. -->
+    <!-- The only package reference: the DynamoDB client OrderRepository uses. -->
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.*" />
   </ItemGroup>
 

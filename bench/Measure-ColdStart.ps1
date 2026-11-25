@@ -9,10 +9,10 @@
     Per variant: force one cold state, fire all samples concurrently, scrape the
     REPORT lines, write the CSV.
 
-    Omit -Variant to measure every variant worth measuring, or name the ones you
-    want. Measuring several in one call rather than looping by hand is what makes
+    Omit -Variant to measure every variant, or name the ones you want.
+    Measuring several in one call rather than looping by hand is what makes
     the numbers comparable: -Samples, -Concurrency and -Region are single-valued,
-    so they apply to every variant by construction. A hand-rolled loop lets you
+    so they apply to every variant in the call. A hand-rolled loop lets you
     re-run one variant at a different sample count and silently mix a 50-sample
     p99 into a table of 30-sample ones. A loop also dies on the first failure and
     loses the variants after it, which is expensive - each one is a reset plus a
@@ -48,10 +48,9 @@
 .EXAMPLE
     ./bench/Measure-ColdStart.ps1 -Samples 30
     ./bench/Show-BenchmarkComparison.ps1
-    The whole comparison, all at the same sample count: managed, SnapStart
-    unprimed (02-snapstart as committed) and primed, and Native AOT ready.
-    03-native-aot is left out - as committed it deploys and then fails at
-    runtime on purpose, so it has no cold-start number to contribute.
+    The whole comparison, every variant at the same sample count. As
+    committed, 02-snapstart and 03-native-aot are copies of 01-managed, so
+    they measure the managed app until you edit them.
 
 .EXAMPLE
     ./bench/Measure-ColdStart.ps1 01-managed
@@ -85,12 +84,10 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Omitting -Variant means every variant, as it does in Deploy-OrdersApi.ps1 and
-# the rest. Note 03-native-aot is absent: as committed it deploys and then
-# fails at runtime on purpose, so it has no cold-start number to contribute.
-# Name it explicitly if you want to watch it fail.
+# the rest.
 if (-not $Variant) {
     $Variant = @('01-managed', '02-snapstart', '02-snapstart-primed',
-        '03-native-aot-ready', '03-native-aot-single-purpose')
+        '03-native-aot', '03-native-aot-ready', '03-native-aot-single-purpose')
 }
 
 if ($Concurrency -le 0) { $Concurrency = $Samples }

@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
-    <!-- Baseline variant: AOT is deliberately off. See demo-seams.md. -->
   </PropertyGroup>
 
   <ItemGroup>

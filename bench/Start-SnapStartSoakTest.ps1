@@ -28,7 +28,7 @@
     Each round:
       1. Pick a random concurrency between -MinConcurrency and -MaxConcurrency
          (1..30 by default) and fire that many requests in one wave through
-         internal/Invoke-OrdersApi.ps1, so they are genuinely in flight together
+         internal/Invoke-OrdersApi.ps1, so they are in flight at the same time
          and each forces its own restore (a Lambda environment serves one
          request at a time).
       2. Wait for CloudWatch log ingestion, scrape the REPORT lines, and keep
@@ -71,9 +71,8 @@
     Longest random wait between rounds, in minutes. Default 30.
 
 .PARAMETER Variant
-    Which variant to soak. Defaults to 02-snapstart-primed - the whole point of
-    this experiment - but left as a parameter so the same script can watch any
-    SnapStart variant.
+    Which variant to soak. Defaults to 02-snapstart-primed, the variant this
+    experiment is about, but any SnapStart variant works.
 
 .PARAMETER IngestionWaitSec
     How long to wait for CloudWatch log ingestion before scraping REPORT lines.
@@ -167,7 +166,7 @@ $profileArgs = @($stack.ProfileArgs)
 # Establish a clean, known starting point: bump COLD_START_SEED and (for a
 # SnapStart variant) publish a fresh version and move the alias onto it. That
 # makes round 1 the first restore of a brand-new snapshot - elapsed ~0h means
-# genuinely just-published - so the hours that follow measure THAT version
+# just published - so the hours that follow measure THAT version
 # aging. No later round touches the function, so nothing resets the clock we
 # are watching.
 Write-Host '=== Pre-round reset (once, before round 1) ===' -ForegroundColor Cyan

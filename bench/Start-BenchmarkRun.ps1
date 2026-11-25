@@ -16,11 +16,10 @@
     Measure-ColdStart.ps1 at a different directory.
 
     -Variant, if given, is forwarded to Measure-ColdStart.ps1 unchanged. Omit it
-    to measure every variant Measure-ColdStart.ps1 measures by default (it owns
-    that list; 03-native-aot is excluded there, as committed it fails at
-    runtime on purpose). -Region and -ProfileName also go only to
-    Measure-ColdStart.ps1 - Show-BenchmarkComparison.ps1 only reads local CSVs
-    and has no use for AWS credentials.
+    to measure every variant, which is Measure-ColdStart.ps1's default. -Region
+    and -ProfileName also go only to Measure-ColdStart.ps1 -
+    Show-BenchmarkComparison.ps1 only reads local CSVs and has no use for AWS
+    credentials.
 
     If one variant fails to measure, Measure-ColdStart.ps1 reports it and
     continues with the rest - this wrapper does not treat that as fatal and

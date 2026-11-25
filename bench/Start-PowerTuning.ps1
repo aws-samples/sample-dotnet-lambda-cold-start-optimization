@@ -64,8 +64,8 @@ if (-not $Variant) {
         '03-native-aot', '03-native-aot-ready', '03-native-aot-single-purpose')
 }
 
-# Default matches the bash script this replaces: cold starts are what the talk
-# is about, so tune for them unless told otherwise.
+# Cold starts are what this sample measures, so tune for them unless told
+# otherwise.
 if (-not $PSBoundParameters.ContainsKey('OnlyColdStarts')) { $OnlyColdStarts = $true }
 
 $profileArgs = if ($ProfileName) { @('--profile', $ProfileName) } else { @() }

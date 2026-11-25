@@ -23,11 +23,6 @@
 .EXAMPLE
     ./bench/Get-OrdersApiLog.ps1 02-snapstart-primed -Minutes 5 -Pattern REPORT
     Only REPORT lines. Also matches INIT_REPORT and RESTORE_REPORT.
-
-.EXAMPLE
-    ./bench/Get-OrdersApiLog.ps1 02-snapstart-primed -Minutes 5 -Pattern serviceMs
-    Only successful order handlers. This line is emitted after CreateOrderAsync
-    returns, so its presence proves the happy path ran.
 #>
 [CmdletBinding()]
 param(

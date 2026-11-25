@@ -16,9 +16,8 @@
     before being written out.
 
     The variant with the numerically lowest "Cold total p50 (Lambda)" is the
-    winner: its entire column - header and every row - is highlighted,
-    matching the green ".reveal table strong" convention in
-    slides/custom.css. Values arrive already formatted (e.g. "857.8ms", or
+    winner: its entire column - header and every row - is highlighted in
+    green. Values arrive already formatted (e.g. "857.8ms", or
     an em dash when absent), so the winner is found by parsing the leading
     number back out of the ColdTotalP50 row and ignoring cells with no
     parseable value. A tie keeps the first (left-most) variant as the

@@ -21,40 +21,39 @@ builder.Logging.AddPowertoolsLogger();
 // Add AWS SDK
 builder.Services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
 
-// FIX #2: Explicit DI registration — compile-time visible to the trimmer.
+// Add application services
 builder.Services.AddSingleton<IOrderValidator, OrderValidator>();
 builder.Services.AddSingleton<IOrderService, OrderService>();
-
-// FIX #3: Point at the trim-annotated repository. The fix itself is in
-// 00-shared/src/OrdersLib/Services/OrderRepositoryAot.cs — diff it against
-// OrderRepository.cs beside it to see the five attributes that resolve IL2xxx.
-builder.Services.AddSingleton<IOrderRepository, OrderRepositoryAot>();
+builder.Services.AddSingleton<IOrderRepository, OrderRepository>();
 
 var app = builder.Build();
 
-// FIX #1: Source-generated JSON serialization — use JsonTypeInfo overloads for AOT safety.
+// Source-generated JSON serialization — use JsonTypeInfo overloads for AOT safety.
 app.MapPost("/orders", async (HttpContext context, IOrderService orderService) =>
 {
     Logger.LogInformation("Processing order request");
 
-    var request = await JsonSerializer.DeserializeAsync(
-        context.Request.Body,
-        AppJsonContext.Default.OrderRequest);
-
-    if (request is null)
-        return Results.BadRequest("Invalid request body.");
-
     try
     {
+        var request = await JsonSerializer.DeserializeAsync(
+            context.Request.Body, AppJsonContext.Default.OrderRequest);
+
+        if (request is null)
+            return Results.Json("Invalid request body.", AppJsonContext.Default.String, statusCode: 400);
+
         var response = await orderService.CreateOrderAsync(request);
         Logger.LogInformation("Order created: {orderId}", response.OrderId);
         var json = JsonSerializer.Serialize(response, AppJsonContext.Default.OrderResponse);
-        return Results.Content(json, "application/json", statusCode: 200);
+        return Results.Content(json, "application/json; charset=utf-8", statusCode: 200);
+    }
+    catch (JsonException)
+    {
+        return Results.Json("Invalid request body.", AppJsonContext.Default.String, statusCode: 400);
     }
     catch (ArgumentException ex)
     {
         Logger.LogWarning("Validation failed: {error}", ex.Message);
-        return Results.BadRequest(ex.Message);
+        return Results.Json(ex.Message, AppJsonContext.Default.String, statusCode: 400);
     }
 });
 

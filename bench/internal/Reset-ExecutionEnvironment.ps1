@@ -11,7 +11,7 @@
 
     SnapStart off - bump a benign environment variable on $LATEST. Any
     configuration change discards existing execution environments, so the next
-    invoke has to initialise.
+    invoke has to initialize.
 
     SnapStart on - bumping $LATEST forces nothing, because the API Gateway
     integration targets the alias, which serves an immutable published version.

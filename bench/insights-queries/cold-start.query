@@ -1,9 +1,0 @@
-filter @type = "REPORT"
-| parse @message /Init Duration: (?<initMs>[0-9.]+) ms/
-| stats
-    count(*) as invocations,
-    pct(initMs, 50) as cold_p50,
-    pct(initMs, 99) as cold_p99,
-    avg(@duration) as warm_avg_ms,
-    max(@maxMemoryUsed / 1000 / 1000) as max_mem_mb
-  by @log

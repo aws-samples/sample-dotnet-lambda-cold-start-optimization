@@ -6,13 +6,13 @@
     Builds and deploys the Orders API variants, each to its own stack.
 
 .DESCRIPTION
-    Variants, in talk order. The three chapters sit at the repo root; each
+    Variants, in talk order. The chapters sit at the repo root; each
     chapter's finished state sits under reference/ with the same number:
       01-managed             managed runtime, the baseline
-      02-snapstart           SnapStart on, no priming (priming added live)
+      02-snapstart           copy of 01-managed; add SnapStart, then priming
       02-snapstart-primed    reference/ - SnapStart plus priming hooks
-      03-native-aot          PublishAot on, the three seams unfixed
-      03-native-aot-ready    reference/ - all three fixed, warning-free
+      03-native-aot          copy of 01-managed; add PublishAot, then the fixes
+      03-native-aot-ready    reference/ - PublishAot with the fixes, warning-free
       03-native-aot-single-purpose
                              reference/ - no ASP.NET Core, no Powertools
 
@@ -34,10 +34,10 @@
     /32, looked up from https://checkip.amazonaws.com. The CIDR is resolved
     once, before the first build, and passed to every stack. If the lookup
     fails the script stops - it never falls back to an open range. Redeploy
-    whenever your public IP changes (a venue Wi-Fi, a VPN); the new range
+    whenever your public IP changes (a new network, a VPN); the new range
     takes about a minute to take effect.
 
-    No `aws lambda publish-version` here. Both SnapStart variants set
+    No `aws lambda publish-version` here. A SnapStart variant sets
     AutoPublishAlias, so SAM publishes a version and moves the alias on every
     deploy. Publishing again by hand would create an orphan version the alias
     does not point at, and trigger another round of billed snapshot creation -
@@ -46,7 +46,7 @@
 
 .EXAMPLE
     ./Deploy-OrdersApi.ps1
-    All six: the three chapters and the three reference variants.
+    Every variant: the chapters and the reference variants.
 
 .EXAMPLE
     ./Deploy-OrdersApi.ps1 01-managed, 02-snapstart-primed
@@ -57,8 +57,8 @@
     One AOT variant. Same plain `sam build` as the rest.
 
 .EXAMPLE
-    ./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 203.0.113.0/24
-    Allow a whole range to POST /orders instead of just your own address.
+    ./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 1.2.3.4/32
+    Allow a specific address or range to POST /orders instead of just your own.
 #>
 [CmdletBinding()]
 param(

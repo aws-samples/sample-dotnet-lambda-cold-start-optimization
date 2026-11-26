@@ -57,8 +57,8 @@
     One AOT variant. Same plain `sam build` as the rest.
 
 .EXAMPLE
-    ./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 1.2.3.4/32
-    Allow a specific address or range to POST /orders instead of just your own.
+    ./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 203.0.113.0/24
+    Allow a specific address or range to POST /orders.
 #>
 [CmdletBinding()]
 param(

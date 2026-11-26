@@ -139,7 +139,7 @@ Then deploy:
 ```powershell
 ./Deploy-OrdersApi.ps1                                  # all variants
 ./Deploy-OrdersApi.ps1 01-managed, 02-snapstart-primed  # a subset
-./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 1.2.3.4/32
+./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 203.0.113.0/24
 ```
 
 The Native AOT variants build only on an arm64 machine (see
@@ -178,7 +178,7 @@ Tear down:
 ## IP restriction on POST /orders
 
 Every template takes an `AllowedCidr` parameter (an IPv4 CIDR, such as
-`1.2.3.4/32`) and attaches an API Gateway resource policy that denies
+`203.0.113.0/24`) and attaches an API Gateway resource policy that denies
 `POST /orders` to any other source address. `GET /health` stays open to
 everyone. The policy is evaluated by API Gateway before Lambda is invoked, so it
 doesn't show up in the `REPORT` lines the cold-start numbers come from.
@@ -187,7 +187,7 @@ doesn't show up in the `REPORT` lines the cold-start numbers come from.
 
 ```powershell
 ./Deploy-OrdersApi.ps1 01-managed                              # your public IP, as a /32
-./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 1.2.3.4/32   # an address or range you choose
+./Deploy-OrdersApi.ps1 01-managed -AllowedCidr 203.0.113.0/24  # an address or range you choose
 ```
 
 Without `-AllowedCidr`, it looks up your public IPv4 address at
@@ -199,7 +199,7 @@ A bare `sam deploy` from inside a variant directory has to pass the value
 itself. The parameter has no default, so the deploy fails without it:
 
 ```bash
-sam deploy --parameter-overrides AllowedCidr=1.2.3.4/32
+sam deploy --parameter-overrides AllowedCidr=203.0.113.0/24
 ```
 
 Things to know:

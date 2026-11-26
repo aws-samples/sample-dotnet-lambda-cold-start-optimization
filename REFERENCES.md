@@ -37,8 +37,7 @@ SnapStart, live.*
   (Microsoft Learn). The fix for the serialization failure:
   `JsonSerializerContext` and `[JsonSerializable]`.
 - [Fixing trim warnings](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/fixing-warnings)
-  (Microsoft Learn). How to read and resolve `IL2xxx` warnings like the ones
-  Powertools Logging raises in `reference/03-native-aot-ready`.
+  (Microsoft Learn). How to read and resolve `IL2xxx` trim warnings.
 
 ## Videos
 
